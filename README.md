@@ -1,1 +1,2 @@
-# CS_Tetris
+# CS_Tetris  
+暇だからテトリス作るよ
