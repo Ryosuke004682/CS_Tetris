@@ -11,7 +11,6 @@ public class Game : MonoBehaviour
     const int FieldYLength   = 20;
 
     const float FallInterval = 0.3f;//何秒毎で落下させるのかを定義
-
     private DateTime lastFallTime;
 
     //ゲームオブジェクトを格納するよ
@@ -25,10 +24,10 @@ public class Game : MonoBehaviour
     //ブロックをX軸、Y軸にどれくらい生成するかどうかを格納する奴
     private SpriteRenderer[,] blockReadereObjects;
     
-    private Tetrimino tetrimino = new Tetrimino();
+    private Tetrimino tetrimino = new Tetrimino();//追加したところ。
     
     
-    private BlockType[,] fieldBlocks;
+    private BlockType[,] fieldBlocks;//追加したところ、
     //enum = 列挙型。名前の通り処理を列挙出来ます。
     public enum BlockType
     {
@@ -46,8 +45,8 @@ public class Game : MonoBehaviour
     private void Start()
     {
         GameInitialSetting();
-        UpdateLocation();
-        Draw();
+        UpdateLocation();//追加したところ
+        Draw();//追加したところ
     }
 
     private void Update()
@@ -87,7 +86,7 @@ public class Game : MonoBehaviour
 
 
     /// <summary>
-    /// 0.3秒ごとに1ブロックずつ落としていく
+    /// 0.3秒ごとに1ブロックずつ落としていく　追加したとこ
     /// </summary>
     private void UpdateLocation()
     {
@@ -105,8 +104,9 @@ public class Game : MonoBehaviour
     }
 
 
+
     /// <summary>
-    /// 落とした先で描画されてないと困るから描画処理をかける
+    /// テトリミノを描画してるところ　追加したとこ
     /// </summary>
     private void Draw()
     {
@@ -133,7 +133,7 @@ public class Game : MonoBehaviour
 
 
     /// <summary>
-    /// ブロックに色を付けてるところ
+    /// ブロックに色を付けてるところ 追加したとこ
     /// </summary>
     /// <param name="blockType"> ブロックの種類を引数で持つ </param>
     /// <returns></returns>
