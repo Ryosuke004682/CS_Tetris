@@ -15,12 +15,12 @@ public class Tetrimino
         //blockTypeが何もなかった場合、
         if (blockType == Game.BlockType.None)
         {
-            //blockTypeにはIの形をしたミノを入れてみる。
+            //TODOランダムにテトリミノのタイプを決定
             blockType = Game.BlockType.TetriminoI;
         }
 
-        basePosition = Vector2Int.zero;
-        BlockType    = blockType;
+        basePosition  = Vector2Int.zero;
+        BlockType     = blockType;
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ public class Tetrimino
     }
 
     /// <summary>
-    /// 上で書いた処理を落下させる処理
+    /// 引数分落下させる処理
     /// </summary>
     /// <param name="x"> Ｘ座標の変数 </param>
     /// <param name="y"> Ｙ座標の変数 </param>
@@ -51,6 +51,4 @@ public class Tetrimino
     {
         basePosition.Set(basePosition.x + x , basePosition.y + y);
     }
-
-
 }
