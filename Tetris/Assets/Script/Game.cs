@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using Unity.VisualScripting.FullSerializer.Internal;
+
 
 /*ゲームの基盤となるロジックを書いていくよ*/
 public class Game : MonoBehaviour
@@ -32,6 +32,10 @@ public class Game : MonoBehaviour
     [SerializeField]
     private GameObject nextField;
 
+    [SerializeField]
+    private GameObject gameOverText;
+
+
     //ブロックをX軸、Y軸にどれくらい生成するかどうかを格納する奴
     private SpriteRenderer[,] blockReadereObjects;
     private SpriteRenderer[,]    nextBlockObjects;
@@ -55,6 +59,17 @@ public class Game : MonoBehaviour
     }
 
 
+    private GameState State { get; set; } = GameState.None;
+
+    public enum GameState
+    {
+        None,
+        Plaing,
+        Result
+    }
+
+
+
     private void Start()
     {
         GameInitialSetting();
@@ -64,29 +79,106 @@ public class Game : MonoBehaviour
 
     private void Update()
     {
-        ControlTetrimino();
-        Draw();
+        switch (State)
+        {
+            case GameState.Plaing:
+                UpdatePlay();
+                break;
+
+            case GameState.Result:
+                UpdateResult();
+                break;
+        }
+    }
+
+    private void UpdatePlay()
+    {
+       var controlled = ControlTetrimino();
 
         DateTime now = DateTime.UtcNow;//現在の時間を取得
 
         //現在の時刻から最後に落下した時間を秒に変換し、FallIntervalよりも小さかったら特に処理をおこなわずに処理を抜ける。
-        if ((now - lastFallTime).TotalSeconds < FallInterval) { return; }
-
-        lastFallTime = now;
-
-        if (!TryMoveTetrimino(0, 1))
+        if ((now - lastFallTime).TotalSeconds < FallInterval)
         {
-            Vector2Int[] positions = tetrimino.GetBlockPositions();
+            if(!controlled)
+            return; 
+        }
+        else
+        {
+            lastFallTime = now;
 
-            foreach(Vector2Int position in positions)
+            if (!TryMoveTetrimino(0, 1))
             {
-                fieldBlocks[position.y, position.x] = nextTetrimino.BlockType;
-            }
+                Vector2Int[] positions = tetrimino.SetBlockPositions();
 
-            tetrimino.Initialize(nextTetrimino.BlockType);
-            nextTetrimino.Initialize();
+                foreach (Vector2Int position in positions)
+                {
+                    fieldBlocks[position.y, position.x] = nextTetrimino.BlockType;
+                }
+                DeleteLine();
+
+                tetrimino.Initialize(nextTetrimino.BlockType);
+                nextTetrimino.Initialize();
+
+
+                if(!CanMoveTetrimino(0 , 0))
+                {
+                    gameOverText.SetActive(true);
+                    State = GameState.Result;
+                }
+
+            }
+        }
+        Draw();
+    }
+
+
+
+    private void UpdateResult()
+    {
+        if(Input.GetKeyDown(KeyCode.Space))
+        {
+            GameInitialSetting();
+            State = GameState.Plaing;
         }
     }
+
+
+    /// <summary>
+    /// 一列揃ったら消す処理
+    /// </summary>
+    private void DeleteLine()
+    {
+        for (int y = FieldYLength - 1;  0 <= y; )
+        {
+            bool hasBlank = false;
+
+            for(int x = 0; x < FieldXLength; x++)
+            {
+                if (fieldBlocks[y , x] == BlockType.None)
+                {
+                    hasBlank = true;
+                    break;
+                }
+            }
+
+            if(hasBlank)
+            {
+                y--;
+                continue;
+            }
+
+            for(int downY = y; 0 <= downY; downY--)
+            {
+                for(int x = 0;  x < FieldXLength; x++)
+                {
+                    fieldBlocks[downY, x] = downY == 0 ? BlockType.None : fieldBlocks[downY - 1, x];
+                }
+            }
+        }
+    }
+
+
 
     /// <summary>
     /// テトリミノをユーザーの入力から操作させてるところ。
@@ -122,6 +214,11 @@ public class Game : MonoBehaviour
                 return true;
             }
         }
+        else if(Input.GetKeyDown(KeyCode.Space))
+        {
+            TryRotateTetrimino();
+        }
+
         return false;
     }
 
@@ -139,10 +236,7 @@ public class Game : MonoBehaviour
             return true;
         }
         return false;
-
     }
-
-
 
     /// <summary>
     /// 動かせる範囲の判定
@@ -152,7 +246,7 @@ public class Game : MonoBehaviour
     /// <returns></returns>
     private bool CanMoveTetrimino(int moveX , int moveY)
     {
-        Vector2Int[] blockPositions = tetrimino.GetBlockPositions();
+        Vector2Int[] blockPositions = tetrimino.SetBlockPositions();
 
         foreach(Vector2 blockPosition in blockPositions)
         {
@@ -167,6 +261,35 @@ public class Game : MonoBehaviour
         }
         return true;
     }
+
+
+
+    private bool TryRotateTetrimino()
+    {
+        if(CanRotateTetrimino())
+        {
+            tetrimino.RotationTetrimino();
+            return true;
+        }
+        return false;
+    }
+
+    private bool CanRotateTetrimino()
+    {
+        Vector2Int[] blockPositions = tetrimino.GetRolledBlockposition();
+
+        foreach (Vector2Int blockPosition in blockPositions)
+        {
+            int x = blockPosition.x;
+            int y = blockPosition.y;
+
+            if (x < 0 || FieldXLength <= x) { return false; }
+            if (y < 0 || FieldYLength <= y) { return false; }
+            if (fieldBlocks[y, x] != BlockType.None) { return false; }
+        }
+        return true;
+    }
+
 
 
 
@@ -204,9 +327,9 @@ public class Game : MonoBehaviour
                 SpriteRenderer block = Instantiate(squerePrefab, nextField.transform);
                 block.transform.localPosition = new Vector3(x- 1.5f, y - 1.5f, 0);//画角調整
                 block.transform.localRotation = Quaternion.identity;//生成したときに変な方向を向かないようにローテーションの値を固定
-                block.transform.localScale = Vector3.one;         //スケールも全部1のままでいいので1に設定
-                block.color = Color.black;
-                nextBlockObjects[y, x] = block;
+                block.transform.localScale    = Vector3.one;         //スケールも全部1のままでいいので1に設定
+                block.color                   = Color.black;
+                nextBlockObjects[y, x]        = block;
             }
         }
         fieldBlocks      = new BlockType[FieldYLength, FieldXLength];
@@ -215,14 +338,18 @@ public class Game : MonoBehaviour
 
 
     /// <summary>
-    /// 0.3秒ごとに1ブロックずつ落としていく　追加したとこ
+    /// 0.3秒ごとに1ブロックずつ落としていく
     /// </summary>
     private void UpdateLocation()
     {
+        gameOverText.SetActive(false);//GameOverのテキスト
+
         tetrimino.Initialize();
         nextTetrimino.Initialize();
         lastFallTime      = DateTime.UtcNow;
         lastControlleTime = DateTime.UtcNow;
+
+        State = GameState.Plaing;
 
         for(int y = 0; y < FieldYLength; y++)
         {
@@ -236,7 +363,7 @@ public class Game : MonoBehaviour
 
 
     /// <summary>
-    /// テトリミノを描画してるところ　追加したとこ
+    /// テトリミノを描画してるところ
     /// </summary>
     private void Draw()
     {
@@ -255,7 +382,7 @@ public class Game : MonoBehaviour
 
         //テトリミノを描画
         {
-            Vector2Int[] positions = tetrimino.GetBlockPositions();
+            Vector2Int[] positions = tetrimino.SetBlockPositions();
             foreach (Vector2Int position in positions)
             {
                 SpriteRenderer tetriminoBlock = blockReadereObjects[position.y, position.x];
@@ -263,24 +390,22 @@ public class Game : MonoBehaviour
             }
         }
 
-
         //Nextフィールドを描画
-        for(int y = 0; y < NextFieldXLength; y++)
+        for(int y = 0; y < NextFieldYLength; y++)
         {
-            for(int x = 0; x < NextFieldYLength; x++)
+            for(int x = 0; x < NextFieldXLength; x++)
             {
                 nextBlockObjects[y, x].color = GetBlockColor(BlockType.None);
             }
         }
 
-
         //Nextテトリミノを描画
         {
-            Vector2Int[] nextTetrimino_Positions = nextTetrimino.GetBlockPositions();
+            Vector2Int[] nextTetrimino_Positions = nextTetrimino.SetBlockPositions();
             
             foreach(Vector2Int position in nextTetrimino_Positions)
             {
-                SpriteRenderer tetriminoBlock = nextBlockObjects[position.y , position.x + 1];
+                SpriteRenderer tetriminoBlock = nextBlockObjects[position.y , position.x];
                 tetriminoBlock.color = GetBlockColor(nextTetrimino.BlockType);
             }
         }
