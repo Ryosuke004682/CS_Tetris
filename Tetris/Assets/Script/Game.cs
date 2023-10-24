@@ -93,7 +93,8 @@ public class Game : MonoBehaviour
 
     private void UpdatePlay()
     {
-       var controlled = ControlTetrimino();
+
+        var controlled = ControlTetrimino();
 
         DateTime now = DateTime.UtcNow;//現在の時間を取得
 
@@ -113,7 +114,7 @@ public class Game : MonoBehaviour
 
                 foreach (Vector2Int position in positions)
                 {
-                    fieldBlocks[position.y, position.x] = nextTetrimino.BlockType;
+                    fieldBlocks[position.y, position.x] = tetrimino.BlockType;
                 }
                 DeleteLine();
 
@@ -130,6 +131,7 @@ public class Game : MonoBehaviour
             }
         }
         Draw();
+
     }
 
 
@@ -138,7 +140,7 @@ public class Game : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.Space))
         {
-            GameInitialSetting();
+            UpdateLocation();
             State = GameState.Plaing;
         }
     }
@@ -208,7 +210,7 @@ public class Game : MonoBehaviour
         }
         else if (Input.GetKey(KeyCode.DownArrow))
         {
-            if (TryMoveTetrimino(0, 1))
+            if (TryMoveTetrimino(0, 2))
             {
                 lastControlleTime = now;
                 return true;
@@ -342,7 +344,7 @@ public class Game : MonoBehaviour
     /// </summary>
     private void UpdateLocation()
     {
-        gameOverText.SetActive(false);//GameOverのテキスト
+        gameOverText.SetActive(false);//GameOverのテキストを非表示にする。
 
         tetrimino.Initialize();
         nextTetrimino.Initialize();
@@ -375,7 +377,7 @@ public class Game : MonoBehaviour
                 SpriteRenderer blockObj  = blockReadereObjects[y , x];
                 Game.BlockType blockType = fieldBlocks[y , x];
 
-                blockObj.color = GetBlockColor(blockType);
+                blockObj.color           = GetBlockColor(blockType);
             }
         }
 
@@ -435,6 +437,4 @@ public class Game : MonoBehaviour
             default : return Color.white;//例外処理
         }
     }
-
-
 }
