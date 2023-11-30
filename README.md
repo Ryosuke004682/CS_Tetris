@@ -22,4 +22,7 @@
 ---　　
 
 完成動画  
-https://youtu.be/mh7dSw_XQ8w
+https://youtu.be/mh7dSw_XQ8w  
+
+加者特典の資料をもらい損ねてしまった、という方は、下記のメールアドレスからお問い合わせください。  
+Ryousuke004682@gmail.com
